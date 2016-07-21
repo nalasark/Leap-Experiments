@@ -1,0 +1,226 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+    <script src="http://js.leapmotion.com/leap-0.6.4.js"></script>
+    <script src="http://js.leapmotion.com/leap-plugins-0.1.11.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+
+    <style> 
+        body {
+            font-size: 1.5em;
+            line-height: 2em;
+        }
+
+        #cursor {
+            width: 40px;
+            height: 40px;
+            position: fixed;
+            margin-left: -50px;
+            margin-top: -50px;
+            z-index: 910;
+            border: 2px solid green;
+            border-radius: 50%;
+        }
+
+        #cursor2 {
+            width: 40px;
+            height: 40px;
+            position: fixed;
+            margin-left: -50px;
+            margin-top: -50px;
+            z-index: 920;
+            border: 2px solid green;
+            border-radius: 50%;
+        }
+
+        #cursor3 {
+            width: 40px;
+            height: 40px;
+            position: fixed;
+            margin-left: -50px;
+            margin-top: -50px;
+            z-index: 930;
+            border: 2px solid green;
+            border-radius: 50%;
+        }
+
+        .buttonWrap {
+            text-align: center;
+            margin-top: 200px;
+        }
+
+        button {
+            padding: 1em;
+            margin: auto;
+        }
+
+        #map {
+            width: 100%;
+            height: 300px;
+        }
+    </style>
+
+</head>
+<body>
+    <div id="map"></div>
+    <div id="normal"></div>
+    <div id="grab"></div>
+    <div id="output" class="output"></div>
+    <div id="output2" class="output"></div>
+    <div id="cursor"></div>
+    <div id="cursor2"></div>
+    <div id="cursor3"></div>
+
+    <script type="text/javascript">
+        var map
+
+        function initMap() {
+            var myLatlng = { lat: 1.352083, lng: 103.819836 };
+
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 10,
+                center: myLatlng
+            });
+        }
+    </script>
+    <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9tS0FTriYHZkcMpcsHaXhjDz9pPqLIbE&callback=initMap">
+    </script>
+    <script type="text/javascript">
+      window.cursor = $('#cursor');
+      window.cursor2 =  $('#cursor2');
+      window.cursor3 = $('#cursor3');
+      window.output = $('#output');
+      window.output2 = $('#output2');
+      window.normalval = $('#normal');
+      window.grab = $('#grab');
+      window.map = $('#map');
+
+      window.state = false;
+      window.dist;
+      window.timedelay = new Date().getTime();
+
+      function getExtendedFingers(hand) {
+          var f = 0;
+          for (var i = 0; i < hand.fingers.length; i++) {
+              if (hand.fingers[i].extended) {
+                  f++;
+              }
+          }
+          return f;
+      }
+
+      Leap.loop(function(frame){
+
+          var pan = function (x, z) {
+              //if (x > $(window).width()-50 || x < 50 || z > $(window).height()-50 || z < 50) {
+              //    this.map.panBy(window.panvalues[0], window.panvalues[1]);
+              //} else {
+                  x2 = window.x;
+                  z2 = window.z;
+              //    window.panvalues = [x2 - x, z2 - z];
+                  this.map.panBy(x2 - x, z2 - z);
+              //}
+        }
+
+        var zoom = function () {
+            delay = new Date().getTime();
+
+            if (!window.state) {
+                window.timedelay = 0;
+            } else if (screenPosition[1] > 150 && delay - window.timedelay > 500) {
+                this.map.setZoom(this.map.getZoom() + 1);
+                window.timedelay = new Date().getTime();
+            } else if (screenPosition[1] < -1000 && delay - window.timedelay > 500) {
+                this.map.setZoom(this.map.getZoom() - 1);
+                window.timedelay = new Date().getTime();
+            }
+        };
+
+        var getGreenToRed = function (value) { //-500 ~ -300 range
+            range = [-300, -400];
+            percent = (value - range[0]) / (range[1] - range[0]) * 100;
+            r = percent < 0 ? 255 : Math.floor(255 - (percent * 2 - range[0]) * 255 / 100);
+            g = percent > 100 ? 255 : Math.floor((percent * 2) * 255 / 100);
+            return '2px solid rgb(' + r + ',' + g + ',0)';
+        };
+
+        var size = function (value) { //-500 ~ -300 range
+          range = [-400, -300];
+          limits = [10, 30];
+          if (value > range[1]) return limits[0]+"px";
+          if (value < range[0]) return limits[1]+"px";
+          percent = (value - 100) / (500 - 100) * 100;
+          return ((limits[1] - limits[0]) / (range[0] - range[1]) * (value - range[1]) + limits[0]) + 'px';
+      }
+
+        if (frame.hands.length > 0) {
+            var screenPosition = frame.hands[0].screenPosition(frame.hands[0].Position);
+
+            var outputContent = "x: " + (screenPosition[0].toPrecision(4)) + 'px' +
+                   "        <br/>y: " + (screenPosition[1].toPrecision(4)) + 'px' +
+                   "        <br/>z: " + (screenPosition[2].toPrecision(4)) + 'px';
+            // hide and show the cursor in order to get second-topmost element.
+            cursor.hide();
+            var el = document.elementFromPoint(
+                screenPosition[0],
+                screenPosition[2]
+            );
+            cursor.show();
+            if (el) {
+                outputContent += '<br>Topmost element: ' + el.tagName + ' #' + el.id + ' .' + el.className;
+            }
+            output.html(outputContent);
+
+
+            normalval.html('<br>normal: ' + frame.hands[0].palmNormal);
+            grab.html('<br>grab: ' + frame.hands[0].grabStrength);
+            window.normal = frame.hands[0].palmNormal;
+            if (frame.hands[0].pinchStrength == 1) {
+                console.log('click');
+            }
+
+            cursor.css({
+                width: size(screenPosition[1]),
+                height: size(screenPosition[1]),
+                left: screenPosition[0] + 'px',
+                top: screenPosition[2] + 'px',
+                border: getGreenToRed(screenPosition[1])
+            });
+
+            
+            if (screenPosition[1] > -250 && screenPosition[1] <= 150) {
+                if (frame.hands[0].grabStrength == 1) {
+                    pan(screenPosition[0], screenPosition[2]);
+                    window.state = false;
+                }
+            } else if (screenPosition[1] > 150 || screenPosition[1] < -400) {
+                zoom();
+                window.state = true;
+            } else {
+                window.state = false;
+            }
+
+            window.x = screenPosition[0];
+            window.y = screenPosition[1];
+            window.z = screenPosition[2];
+
+        }
+    })
+    .use('screenPosition', {
+      scale: 1
+    });
+    </script>
+
+</body>
+</html><!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+
+</body>
+</html>
