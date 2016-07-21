@@ -11,29 +11,7 @@
             line-height: 2em;
         }
 
-        #cursor {
-            width: 40px;
-            height: 40px;
-            position: fixed;
-            margin-left: -50px;
-            margin-top: -50px;
-            z-index: 910;
-            border: 2px solid green;
-            border-radius: 50%;
-        }
-
-        #cursor2 {
-            width: 40px;
-            height: 40px;
-            position: fixed;
-            margin-left: -50px;
-            margin-top: -50px;
-            z-index: 920;
-            border: 2px solid green;
-            border-radius: 50%;
-        }
-
-        #cursor3 {
+        .cursor {
             width: 40px;
             height: 40px;
             position: fixed;
@@ -67,9 +45,10 @@
     <div id="grab"></div>
     <div id="output" class="output"></div>
     <div id="output2" class="output"></div>
-    <div id="cursor"></div>
-    <div id="cursor2"></div>
-    <div id="cursor3"></div>
+    <div id="cursor" class="cursor"></div>
+    <div id="cursor2" class="cursor"></div>
+    <div id="cursor3" class="cursor"></div>
+    <div id="cursorb" class="cursor"></div>
 
     <script type="text/javascript">
         var map
@@ -90,6 +69,7 @@
       window.cursor = $('#cursor');
       window.cursor2 =  $('#cursor2');
       window.cursor3 = $('#cursor3');
+      window.cursorb = $('#cursorb');
       window.output = $('#output');
       window.output2 = $('#output2');
       window.normalval = $('#normal');
@@ -189,12 +169,12 @@
             });
 
             
-            if (screenPosition[1] > -250 && screenPosition[1] <= 150) {
+            if (screenPosition[1] > -600 && screenPosition[1] <= 100) {
                 if (frame.hands[0].grabStrength == 1) {
                     pan(screenPosition[0], screenPosition[2]);
                     window.state = false;
                 }
-            } else if (screenPosition[1] > 150 || screenPosition[1] < -400) {
+            } else if (screenPosition[1] > 100 || screenPosition[1] < -600) {
                 zoom();
                 window.state = true;
             } else {
@@ -205,6 +185,17 @@
             window.y = screenPosition[1];
             window.z = screenPosition[2];
 
+            if (frame.hands.length > 1) {
+                var screenPositionb = frame.hands[1].screenPosition(frame.hands[1].Position);
+                screenPositionb[0] += 500;
+                cursorb.css({
+                    width: size(screenPositionb[1]),
+                    height: size(screenPositionb[1]),
+                    left: screenPositionb[0] + 'px',
+                    top: screenPositionb[2] + 'px',
+                    border: getGreenToRed(screenPositionb[1])
+                });
+            }
         }
     })
     .use('screenPosition', {
