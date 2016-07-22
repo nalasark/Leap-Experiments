@@ -5,7 +5,7 @@
     <script src="http://js.leapmotion.com/leap-plugins-0.1.11.js"></script>
     <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 
-    <style> 
+    <style>
         body {
             font-size: 1.5em;
             line-height: 2em;
@@ -76,7 +76,7 @@
       window.grab = $('#grab');
       window.map = $('#map');
 
-      window.state = false;
+      window.velocity = 0;
       window.dist;
       window.timedelay = new Date().getTime();
 
@@ -92,7 +92,7 @@
 
       Leap.loop(function(frame){
 
-          var pan = function (x, z) {
+        var pan = function (x, z) {
               //if (x > $(window).width()-50 || x < 50 || z > $(window).height()-50 || z < 50) {
               //    this.map.panBy(window.panvalues[0], window.panvalues[1]);
               //} else {
@@ -102,18 +102,24 @@
                   this.map.panBy(x2 - x, z2 - z);
               //}
         }
-
-        var zoom = function () {
-            delay = new Date().getTime();
-
-            if (!window.state) {
-                window.timedelay = 0;
-            } else if (screenPosition[1] > 150 && delay - window.timedelay > 500) {
+        
+        var zoomMap = function () {
+            if (window.velocity > 300) {
                 this.map.setZoom(this.map.getZoom() + 1);
-                window.timedelay = new Date().getTime();
-            } else if (screenPosition[1] < -1000 && delay - window.timedelay > 500) {
+            } else if (window.velocity < -300) {
                 this.map.setZoom(this.map.getZoom() - 1);
+            }
+        }
+
+        var zoom = function (velocity) {
+            delay = new Date().getTime();
+            if (Math.abs(window.velocity - velocity) > 150) {
+                console.log(Math.abs(window.velocity - velocity));
+                window.velocity = 0;
                 window.timedelay = new Date().getTime();
+            } else if (delay - window.timedelay > 500) {
+                zoomMap();
+                delay = new Date().getTime();
             }
         };
 
@@ -168,19 +174,16 @@
                 border: getGreenToRed(screenPosition[1])
             });
 
-            
-            if (screenPosition[1] > -600 && screenPosition[1] <= 100) {
-                if (frame.hands[0].grabStrength == 1) {
-                    pan(screenPosition[0], screenPosition[2]);
-                    window.state = false;
-                }
-            } else if (screenPosition[1] > 100 || screenPosition[1] < -600) {
-                zoom();
-                window.state = true;
-            } else {
-                window.state = false;
-            }
 
+            if (screenPosition[1] > -600 && screenPosition[1] <= 100) {
+                if (frame.hands[0].pinchStrength == 1) {
+                    pan(screenPosition[0], screenPosition[2]);
+                }
+            } else if (frame.hands[0].palmVelocity[1] > 400 || frame.hands[0].palmVelocity[1] < -400) {
+                console.log(frame.hands[0].palmVelocity[1]);
+                window.velocity = frame.hands[0].palmVelocity[1];
+            }
+            zoom(frame.hands[0].palmVelocity[1]);
             window.x = screenPosition[0];
             window.y = screenPosition[1];
             window.z = screenPosition[2];
